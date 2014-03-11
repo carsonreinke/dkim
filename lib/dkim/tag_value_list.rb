@@ -16,6 +16,12 @@ module Dkim
       @keys << k unless self[k]
       @values[k] = v
     end
+    def keys
+      @keys
+    end
+    def values
+      @values
+    end
     def self.parse string
       list = new
       string.split(';').each do |keyval|

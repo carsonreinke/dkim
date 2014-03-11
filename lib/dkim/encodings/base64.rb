@@ -5,6 +5,7 @@ module Dkim
         data.gsub(/\s/, '').unpack('m0')[0]
       end
       def encode data
+        return nil if data.nil?()
         [data].pack('m0').gsub("\n", '')
       end
     end

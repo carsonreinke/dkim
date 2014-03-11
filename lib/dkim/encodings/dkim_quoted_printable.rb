@@ -10,6 +10,7 @@ module Dkim
         end
       end
       def decode string
+        return nil if string.nil?()
         string.gsub(/=([0-9A-F]{2})/) do
           $1.hex.chr
         end
