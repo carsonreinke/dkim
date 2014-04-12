@@ -25,7 +25,10 @@ module Dkim
     def self.parse string
       list = new
       string.split(';').each do |keyval|
-        key, value = keyval.split('=', 2)
+        #Remove preceding and/or trailing whitespace
+        keyval.gsub!(/\A\s+|\s*$/, '')
+        
+        key, value = keyval.split(/\s*=\s*/, 2)
         list[key.strip] = value.strip
       end
       list

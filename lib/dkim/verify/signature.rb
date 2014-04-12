@@ -1,9 +1,7 @@
 require 'dkim/dkim_header'
 require 'dkim/tag_value_list'
 require 'dkim/verify/resolver'
-require 'dkim/encodings/slash_separated'
-require 'dkim/encodings/colon_separated'
-require 'dkim/encodings/pipe_separated'
+require 'dkim/encodings/separated'
 require 'dkim/verify/errors/permanent_failure_errors'
 
 module Dkim
@@ -43,7 +41,7 @@ module Dkim
       
       def policy()
         raise PermanentFailureError.new("Unsupported query method #{self[DkimHeader::QUERY_METHODS]}") unless self[DkimHeader::QUERY_METHODS].include?('dns/txt')
-        @policy ||= Resolver.query(self[DkimHeader::DOMAIN], self[DkimHeader::SELECTOR])
+        @policy ||= Resolver.get_policy(self[DkimHeader::DOMAIN], self[DkimHeader::SELECTOR])
       end
       
       def validate!()
@@ -60,7 +58,7 @@ module Dkim
         #If the "h=" tag does not include the From header field, the Verifier
         #MUST ignore the DKIM-Signature header field and return PERMFAIL (From
         #field not signed).
-        raise FromFieldNotSignedError.new('Missing From header in header tag') unless self[DkimHeader::HEADERS].include?('from')
+        raise FromFieldNotSignedError.new("Missing From header in header tag (#{self[DkimHeader::HEADERS].join(', ')})") unless self[DkimHeader::HEADERS].any?{|h| h.casecmp('from') == 0}
       end
       
       def header_canonicalization()
@@ -125,11 +123,11 @@ module Dkim
         encoder = super(key)
         case key
         when DkimHeader::CANONICALIZATION
-          encoder.extend(Encodings::SlashSeparated)
+          encoder.extend(Encodings::Separated::ForwardSlash)
         when DkimHeader::HEADERS, DkimHeader::QUERY_METHODS
-          encoder.extend(Encodings::ColonSeparated)
+          encoder.extend(Encodings::Separated::Colon)
         when DkimHeader::COPIED_HEADERS
-          encoder.extend(Encodings::PipeSeparated)
+          encoder.extend(Encodings::Separated::Pipe)
         else
           encoder
         end
@@ -152,7 +150,6 @@ module Dkim
       
       
       class << self
-        
         def unacceptable_domains()
           @unacceptable_domains ||= []
         end

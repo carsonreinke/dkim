@@ -11,10 +11,14 @@ module Dkim
         NAMESPACE = '_domainkey'.freeze()
         
         def query(domain, selector)
+          Resolv::DNS.open do |dns|
+            dns.getresources("#{selector}.#{NAMESPACE}.#{domain}", Resolv::DNS::Resource::IN::TXT)
+          end
+        end
+        
+        def get_policy(domain, selector)
           begin
-            record = Resolv::DNS.open do |dns|
-              dns.getresources("#{selector}.#{NAMESPACE}.#{domain}", Resolv::DNS::Resource::IN::TXT)
-            end
+            records = self.query(domain, selector)
           rescue Resolv::ResolvTimeout
             raise KeyUnavailableError.new($!.message)
           rescue Resolv::NXDomain
@@ -22,13 +26,13 @@ module Dkim
           rescue Resolv::ResolvError
             raise TemporaryFailureError.new($!.message)
           end
-          
+
           #RFC 6376 3.6.2.2 "if there are multiple records in an RRset, the results are undefined."
-          raise FailureError.new('Too many records') if record.size() > 1
-          
-          record = record.first()
-          return nil if record.nil?()
-          return Policy.new(record.data())
+          raise FailureError.new('Too many records') if records.size() > 1
+          record = records.first()
+          #RFC 6376 6.1.2.3
+          raise NoKeyForSignatureError.new() if record.nil?()
+          return Policy.new(record.strings.join('')) #Not sure why this #data only returns first?
         end
       end
     end

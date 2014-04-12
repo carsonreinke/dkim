@@ -1,5 +1,6 @@
 
 require 'dkim/signed_mail'
+require 'dkim/verify/mail'
 require 'dkim/options'
 require 'dkim/interceptor'
 
@@ -19,6 +20,10 @@ module Dkim
 
     def sign message, options={}
       SignedMail.new(message, options).to_s
+    end
+    
+    def verify message, options={}
+      Verify::Mail.new(message, options).verify_all.all?{ |r| r.success? }
     end
   end
 end

@@ -1,3 +1,7 @@
+
+require 'test_helper'
+require 'dkim/encodings/separated'
+
 module Dkim
   class EncodingsTest < MiniTest::Unit::TestCase
     def test_plain_text
@@ -19,6 +23,15 @@ module Dkim
       decoded = 'From:foo@eng.example.net|To:joe@example.com|Subject:demo run|Date:July 5, 2005 3:44:08 PM -0700'
       assert_equal encoded, @encoder.encode(decoded)
       assert_equal decoded, @encoder.decode(encoded)
+    end
+    def test_separated
+      @encoder = Encodings::PlainText.new().extend(Encodings::Separated::ForwardSlash)
+      assert_equal 'a/b/c', @encoder.encode(['a', 'b', 'c'])
+      assert_equal ['a', 'b', 'c'], @encoder.decode('a/b/c')
+    end
+    def test_separated_with_whitespace
+      @encoder = Encodings::PlainText.new().extend(Encodings::Separated::ForwardSlash)
+      assert_equal ['a', 'b', 'c'], @encoder.decode('a / b / c')
     end
   end
 end

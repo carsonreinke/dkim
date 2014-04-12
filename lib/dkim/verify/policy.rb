@@ -1,7 +1,7 @@
 require 'openssl'
 require 'dkim/tag_value_list'
 require 'dkim/encodings'
-require 'dkim/encodings/colon_separated'
+require 'dkim/encodings/separated'
 require 'dkim/verify/errors/permanent_failure_errors'
 require 'dkim/verify/errors/temporary_failure_errors'
 
@@ -18,16 +18,19 @@ module Dkim
       
       #RFC 6376 Section 3.6
       DEFAULTS = {
-        VERSION => 'DKIM1',
-        HASH_ALGORITHM => 'sha1:sha256',
-        KEY_TYPE => 'rsa',
-        SERVICE_TYPE => '*'
-      }.freeze
+        VERSION => 'DKIM1'.freeze,
+        HASH_ALGORITHM => 'sha1:sha256'.freeze,
+        KEY_TYPE => 'rsa'.freeze,
+        SERVICE_TYPE => '*'.freeze
+      }
       
       def initialize(value)
+        @original = value
         @list = TagValueList.parse(value)
         DEFAULTS.each{ |k,v| @list[k] = v unless self.has_key?(k) }
       end
+      
+      attr_reader :original
       
       def [](k)
         encoder_for(k).decode(@list[k])
@@ -62,7 +65,7 @@ module Dkim
         begin
           @public_key ||= OpenSSL::PKey::RSA.new(self[PUBLIC_KEY])
         rescue OpenSSL::PKey::RSAError
-          FailureError.new("Public key error: #{$!.message}")
+          raise KeySyntaxError.new("Public key error: #{$!.message}")
         end
       end
       
@@ -97,7 +100,7 @@ module Dkim
       def encoder_for(key)
         case key
         when FLAGS, SERVICE_TYPE, HASH_ALGORITHM
-          Encodings::PlainText.new().extend(Encodings::ColonSeparated)
+          Encodings::PlainText.new().extend(Encodings::Separated::Colon)
         when KEY_TYPE, NOTES, VERSION
           Encodings::PlainText.new()
         when PUBLIC_KEY

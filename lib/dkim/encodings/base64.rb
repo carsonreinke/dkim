@@ -2,7 +2,7 @@ module Dkim
   module Encodings
     class Base64
       def decode data
-        data.gsub(/\s/, '').unpack('m0')[0]
+        data.gsub(/\s/, '').unpack('m')[0]
       end
       def encode data
         return nil if data.nil?()

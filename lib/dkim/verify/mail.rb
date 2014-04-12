@@ -50,31 +50,7 @@ module Dkim
       attr_reader :signatures
       
       #
-      # 
-      #
-      def verify_all(&block)
-        self.signatures.map do |signature|
-          result = Result.new(signature)
-          
-          begin
-            self.verify(signature)
-            result.status = :success
-          rescue PermanentFailureError
-            result.status, result.error = :permfail, $!
-          rescue TemporaryFailureError
-            result.status, result.error = :tempfail, $!
-          rescue StandardError
-            result.status, result.error = :permfail, $!
-          end
-          
-          result
-        end
-      end
-      
-      #
-      # SUCCESS = no error
-      # PERMFAIL = PermanentFailureError
-      # TEMPFAIl = TemporaryFailureError
+      # Verify a signature, raise an error if unverified
       #
       def verify!(signature)
         #Validate signature and policy
@@ -134,13 +110,38 @@ module Dkim
       end
       
       #
-      #
+      # Verify a signature and return a Result
       #
       def verify(signature)
+        result = Result.new(signature)
+        
         begin
           self.verify!(signature)
-        rescue Error
-          return false
+          result.status = :success
+        rescue TemporaryFailureError
+          result.status, result.error = :tempfail, $!
+        rescue PermanentFailureError, StandardError
+          result.status, result.error = :permfail, $!
+        end
+        
+        return result
+      end
+      
+      #
+      # Verify all signatures, raise error on first unverified
+      #
+      def verify_all!()
+        self.signatures.map do |signature|
+          self.verify!(signature)
+        end
+      end
+      
+      #
+      # Verify all signatures and return array of Results
+      #
+      def verify_all()
+        self.signatures.map do |signature|
+          self.verify(signature)
         end
       end
       
