@@ -27,7 +27,7 @@ module Dkim
       def initialize(value)
         @original = value
         @list = TagValueList.parse(value)
-        DEFAULTS.each{ |k,v| @list[k] = v unless self.has_key?(k) }
+        DEFAULTS.each{ |k,v| @list[k] = v.dup unless self.has_key?(k) }
       end
       
       attr_reader :original
